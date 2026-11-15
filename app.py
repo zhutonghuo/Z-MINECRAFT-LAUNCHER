@@ -3,6 +3,7 @@ import datetime
 import shutil
 
 from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import QTimer
 
 from core.config import (load_settings, save_settings, resolve_data_dir,
                          write_saved_data_dir, read_saved_data_dir,
@@ -47,6 +48,8 @@ class AppController:
             qapp.installEventFilter(self._elastic_filter)
         self.apply_theme()
         self.refresh_accounts()
+        # 若本次自动继承了本地已有的数据文件夹，启动后给用户明确提示（数据未丢）
+        QTimer.singleShot(80, self._prompt_inherited_data_dir)
 
     def _resolve_data_dir(self):
         """确定数据目录。
@@ -178,6 +181,29 @@ class AppController:
         if not self.current_account and self.accounts:
             self.current_account = self.accounts[0]
         self.window.update_account_label()
+
+    def _prompt_inherited_data_dir(self):
+        """启动后若本次自动继承了本地已有的数据文件夹，给用户一个明确提示。
+
+        - discovered：新扫描到本机已有的数据目录并接管 → 弹信息框明确告知。
+        - located：记忆中已记录且仍在 → 轻量 toast，不打断。
+        - first_time / relocated：已在启动向导中处理，不再额外提示。
+        """
+        src = getattr(self, 'data_dir_source', None)
+        if not src or src not in ('located', 'discovered'):
+            return
+        path = self.data_root
+        if src == 'discovered':
+            try:
+                from PyQt5.QtWidgets import QMessageBox
+                QMessageBox.information(
+                    self.window, '数据文件夹已自动继承',
+                    '已在本地找到已有的启动器数据文件夹，已自动继承并继续使用：\n\n'
+                    '%s' % path)
+            except Exception:
+                self.window.show_toast('已自动继承数据文件夹：%s' % path, 'info')
+        else:  # located
+            self.window.show_toast('已使用上次的数据文件夹：%s' % path, 'info')
 
     def refresh_instances_page(self):
         """安装加载器后刷新「实例」页（重新读取实例列表）。"""
