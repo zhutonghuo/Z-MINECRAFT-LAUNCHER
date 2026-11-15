@@ -670,14 +670,14 @@ class SettingsPage(QWidget):
         upset_path = os.path.join(exe_dir, 'upset.exe')
         if not os.path.isfile(upset_path):
             self.app.window.show_toast(
-                '更新助手（upset.exe）缺失，请改用下方「下载安装包手动更新」', 'error')
-            self.dl_setup_btn.setVisible(True)
+                '更新助手（upset.exe）缺失，请改用下方「下载绿色版手动更新」', 'error')
+            self.dl_portable_btn.setVisible(True)
             return
         if not os.access(exe_dir, os.W_OK):
             self.app.window.show_toast(
-                '当前目录不可写，无法就地更新，请改用下方「下载安装包手动更新」',
+                '当前目录不可写，无法就地更新，请改用下方「下载绿色版手动更新」',
                 'error')
-            self.dl_setup_btn.setVisible(True)
+            self.dl_portable_btn.setVisible(True)
             return
         remote = info.get('latest') or info.get('version') or 'new'
         tmp = os.path.join(tempfile.gettempdir(), 'zmcl_update_%s.exe' % remote)
