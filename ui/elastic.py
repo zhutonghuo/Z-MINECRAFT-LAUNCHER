@@ -6,6 +6,8 @@
 现改为空操作：页面切换的动画改由 main_window 用纯几何滑动实现，不再发白。
 """
 
+from PyQt5.QtCore import QObject
+
 
 def set_elastic(enabled):
     pass
@@ -19,6 +21,7 @@ def animate_page(page):
     pass
 
 
-class ElasticFilter:
+class ElasticFilter(QObject):
+    """空操作事件过滤器（保留接口，安装到 QApplication 上不影响任何行为）。"""
     def eventFilter(self, obj, event):
         return False
