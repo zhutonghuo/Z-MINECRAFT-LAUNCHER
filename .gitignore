@@ -1,14 +1,36 @@
+# ===== Python =====
 __pycache__/
 *.py[cod]
 *$py.class
-build/
-dist/
-*.spec
-*.exe
-*.zip
-.venv/
-venv/
-.vscode/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# ===== 日志 / 临时 =====
+*.log
+_crash.log
+
+# ===== 编辑器 / 系统 =====
 .idea/
+.vscode/
+*.swp
 .DS_Store
 Thumbs.db
+
+# ===== 启动器运行时数据（位于独立数据根，不入库）=====
+instances/
+accounts/
+versions/
+libraries/
+assets/objects/
+mods_cache/
+launcher-config.json
+mclauncher_data_dir.txt
+
+# ===== 打包产物（在 ZMCLauncher打包 目录，不入库）=====
+*.exe
+*.zip
+dist/
+build/
+_work/
+_dist*/
