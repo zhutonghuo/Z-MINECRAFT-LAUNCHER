@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
-"""PCL 风格的基础控件。
+"""PCL2 风格基础控件。
 
-保留旧页面层依赖的接口：
-- fmt_size(n)
-- ProgressPanel(QFrame)        对象名 Card / CardTitle / ProgressBar / CardSub / PageHint
-- TitleBar(QWidget)            含 min_btn / max_btn / close_btn，拖动用 startSystemMove
-- NavButton(QPushButton)       侧边栏导航按钮
-并新增 Card / PrimaryButton / GhostButton 等便捷控件。
+- fmt_size(n)                 体积格式化
+- ProgressPanel(QFrame)       下载进度面板（保留 objectName 供换肤）
+- TitleBar(QWidget)           PCL2 亮蓝顶栏：左侧 Logo + 居中导航胶囊 + 右侧窗口按钮
+- NavButton(QPushButton)      顶栏导航胶囊，点击切页
+- LaunchButton(QPushButton)   左下「启动游戏」大按钮
+- Card / PrimaryButton / GhostButton  便捷控件
 """
 from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton,
-                             QFrame, QProgressBar)
-from PyQt5.QtCore import Qt
+                             QFrame, QProgressBar, QButtonGroup)
+from PyQt5.QtCore import Qt, QRectF
+from PyQt5.QtGui import QPainter, QColor, QBrush, QLinearGradient
 
 
 def fmt_size(n):
@@ -89,52 +90,6 @@ class ProgressPanel(QFrame):
         self.file.setText('')
 
 
-class TitleBar(QWidget):
-    def __init__(self, parent, title='Z MINECRAFT LAUNCHER'):
-        super().__init__(parent)
-        self.parent = parent
-        self.setFixedHeight(40)
-        self.setObjectName('TitleBar')
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(14, 0, 8, 0)
-        layout.setSpacing(8)
-        self.icon = QLabel('◆')
-        self.icon.setObjectName('TitleIcon')
-        self.title = QLabel(title)
-        self.title.setObjectName('TitleText')
-        layout.addWidget(self.icon)
-        layout.addWidget(self.title)
-        layout.addStretch(1)
-        self.min_btn = QPushButton('—')
-        self.max_btn = QPushButton('▢')
-        self.close_btn = QPushButton('✕')
-        for b in (self.min_btn, self.max_btn, self.close_btn):
-            b.setObjectName('WindowButton')
-            b.setFixedSize(36, 28)
-        self.min_btn.clicked.connect(parent.showMinimized)
-        self.max_btn.clicked.connect(self.toggle_max)
-        self.close_btn.clicked.connect(parent.close)
-        layout.addWidget(self.min_btn)
-        layout.addWidget(self.max_btn)
-        layout.addWidget(self.close_btn)
-
-    def toggle_max(self):
-        if self.parent.isMaximized():
-            self.parent.showNormal()
-        else:
-            self.parent.showMaximized()
-
-    def mousePressEvent(self, e):
-        if e.button() == Qt.LeftButton:
-            child = self.childAt(e.pos())
-            if child in (self.min_btn, self.max_btn, self.close_btn):
-                return
-            wh = self.parent.windowHandle()
-            if wh is not None:
-                wh.startSystemMove()
-            e.accept()
-
-
 class NavButton(QPushButton):
     def __init__(self, text, page_index, stack, parent=None):
         super().__init__(text, parent)
@@ -149,9 +104,102 @@ class NavButton(QPushButton):
         self.setChecked(True)
 
 
+class TitleBar(QWidget):
+    """PCL2 亮蓝顶栏：左侧 Logo + 居中导航胶囊 + 右侧窗口按钮。
+
+    保留 min_btn / max_btn / close_btn 三个属性供 nativeEvent 与外部使用。
+    拖动用 windowHandle().startSystemMove()（绕开 nativeEvent 返回值顺序坑）。
+    """
+    def __init__(self, parent, stack=None, nav_items=None, nav_group=None):
+        super().__init__(parent)
+        self.parent = parent
+        self.setFixedHeight(50)
+        self.setObjectName('TitleBar')
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(18, 0, 8, 0)
+        layout.setSpacing(6)
+
+        # ---- 左侧 Logo ----
+        logo_box = QVBoxLayout()
+        logo_box.setSpacing(0)
+        logo_box.setContentsMargins(0, 0, 0, 0)
+        self.logo = QLabel('PCL')
+        self.logo.setObjectName('Logo')
+        self.logo_sub = QLabel('Z MINECRAFT LAUNCHER')
+        self.logo_sub.setObjectName('LogoSub')
+        logo_box.addWidget(self.logo)
+        logo_box.addWidget(self.logo_sub)
+        layout.addLayout(logo_box)
+        layout.addSpacing(18)
+        layout.addStretch(1)
+
+        # ---- 居中导航胶囊 ----
+        self.nav_layout = QHBoxLayout()
+        self.nav_layout.setSpacing(6)
+        self.nav_buttons = []
+        if stack is not None and nav_items:
+            for text, idx in nav_items:
+                btn = NavButton(text, idx, stack, self)
+                self.nav_buttons.append(btn)
+                if nav_group is not None:
+                    nav_group.addButton(btn)
+                self.nav_layout.addWidget(btn)
+        layout.addLayout(self.nav_layout)
+        layout.addStretch(1)
+
+        # ---- 右侧窗口按钮 ----
+        self.min_btn = QPushButton('—')
+        self.max_btn = QPushButton('□')
+        self.close_btn = QPushButton('✕')
+        self.close_btn.setObjectName('close_btn')
+        for b in (self.min_btn, self.max_btn, self.close_btn):
+            b.setObjectName('WindowButton')
+            b.setFixedHeight(30)
+        self.close_btn.setObjectName('close_btn')  # 保持 hover 红色 + 窗口按钮基础样式
+        self.min_btn.clicked.connect(parent.showMinimized)
+        self.max_btn.clicked.connect(self.toggle_max)
+        self.close_btn.clicked.connect(parent.close)
+        layout.addWidget(self.min_btn)
+        layout.addWidget(self.max_btn)
+        layout.addWidget(self.close_btn)
+
+    def paintEvent(self, event):
+        """自绘顶栏蓝色渐变（透明父窗口下 QSS 渐变可能不生效）。"""
+        from ui.styles import _palette
+        theme = self.parent.app.settings.get('theme', 'light') if hasattr(self.parent, 'app') else 'light'
+        c = _palette(theme)
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        grad = QLinearGradient(0, 0, self.width(), 0)
+        grad.setColorAt(0.0, QColor(c['top1']))
+        grad.setColorAt(1.0, QColor(c['top2']))
+        p.fillRect(QRectF(self.rect()), QBrush(grad))
+
+    def toggle_max(self):
+        if self.parent.isMaximized():
+            self.parent.showNormal()
+        else:
+            self.parent.showMaximized()
+
+    def mousePressEvent(self, e):
+        if e.button() == Qt.LeftButton:
+            child = self.childAt(e.pos())
+            if child in (self.min_btn, self.max_btn, self.close_btn) or isinstance(child, NavButton):
+                return
+            wh = self.parent.windowHandle()
+            if wh is not None:
+                wh.startSystemMove()
+            e.accept()
+
+
+class LaunchButton(QPushButton):
+    def __init__(self, text='启动游戏', parent=None):
+        super().__init__(text, parent)
+        self.setObjectName('LaunchButton')
+
+
 class Card(QFrame):
     """通用的圆角卡片容器，内部直接往 layout 里加控件即可。"""
-
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName('Card')
