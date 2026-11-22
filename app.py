@@ -127,7 +127,7 @@ class AppController:
     def apply_theme(self):
         app = QApplication.instance()
         if app:
-            app.setStyleSheet(get_stylesheet(self.settings.get('theme', 'dark')))
+            app.setStyleSheet(get_stylesheet(self.settings.get('theme', 'light')))
 
     def set_theme(self, theme):
         self.settings['theme'] = theme
