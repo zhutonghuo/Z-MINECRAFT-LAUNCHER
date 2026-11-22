@@ -523,7 +523,7 @@ DEFAULT_SETTINGS = {
     'concurrency': 16,
     'segmented': True,
     'proxy': '',
-    'theme': 'dark',
+    'theme': 'light',
     'msaClientId': '',
     'lastAccount': None,
     'lastInstance': None,
