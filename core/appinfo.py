@@ -7,7 +7,7 @@ build_command 里）。官网静态托管的 version.json 也由这里给出地�
 import re
 
 # 当前启动器版本（与官网 version.json 里的 latest 比较）
-LAUNCHER_VERSION = '2.0.0'
+LAUNCHER_VERSION = '2.1.0'
 
 # 服务器上的版本信息 JSON（官网静态托管，HTTP 直连即可）
 VERSION_INFO_URL = 'http://47.95.246.166/zml/version.json'
