@@ -116,11 +116,15 @@ class SettingsPage(QWidget):
 
         self.theme_combo = QComboBox()
         self.theme_combo.setObjectName('ComboBox')
-        self.theme_combo.addItems(['dark', 'light'])
-        ti = self.theme_combo.findText(s.get('theme', 'dark'))
+        # 显示中文，itemData 存代码用的键值
+        self.theme_combo.addItem('龙猫蓝（浅色）', 'light')
+        self.theme_combo.addItem('深空蓝（深色）', 'dark')
+        cur_theme = s.get('theme', 'light')
+        ti = self.theme_combo.findData(cur_theme)
         if ti >= 0:
             self.theme_combo.setCurrentIndex(ti)
-        self.theme_combo.currentTextChanged.connect(lambda t: app.set_theme(t))
+        self.theme_combo.currentIndexChanged.connect(
+            lambda i: app.set_theme(self.theme_combo.itemData(i)) if i >= 0 else None)
         layout.addWidget(Row('主题', self.theme_combo))
 
         self.msa_edit = QLineEdit()
@@ -739,7 +743,7 @@ class SettingsPage(QWidget):
             set_custom_base(custom_url)
         except Exception:
             pass
-        s['theme'] = self.theme_combo.currentText()
+        s['theme'] = self.theme_combo.currentData() or 'light'
         s['concurrency'] = self.conc_spin.value()
         s['segmented'] = self.seg_check.isChecked()
         s['showStagePanel'] = self.stage_check.isChecked()
